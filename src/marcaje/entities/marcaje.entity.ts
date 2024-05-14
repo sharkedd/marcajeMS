@@ -1,14 +1,13 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity({ name: 'marcajes'})
+@Entity({ name: 'marcajes' })
 export class Marcaje {
-    @PrimaryGeneratedColumn()
-    id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-    @Column()
-    id_user: number;
+  @Column()
+  id_user: number;
 
-    @Column()
-    date: string;
-
+  @Column()
+  date: string;
 }
