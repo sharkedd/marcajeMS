@@ -26,7 +26,22 @@ export class MarcajeService {
       const response = await axios.get(endpoint);
 
       const endpoint2: string = `${process.env.EXPO_PUBLIC_MS_USER_URL}/auth/${token}`;
-      const response2 = await axios.post(endpoint2);
+      const response2 = await axios.post(endpoint2, token);
+      
+      async function postDataWithoutBody(url, authToken) {
+        try {
+            const response = await axios.post(url, null /* Este es el body, se mete en { }*/, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json' // Si no se envía data, el tipo de contenido puede ser opcional
+                }
+            });
+            console.log('Response:', response.data);
+            return response.data; // Opcional: devolver los datos de respuesta
+        } catch (error) {
+            console.log(error)
+        }
+      }
 
       if(response.data) {
         const marcaje = new Marcaje();
