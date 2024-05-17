@@ -44,13 +44,12 @@ export class MarcajeService {
       .format('DD-MM-YYYY HH:mm:ss');
       console.log("Respuesta:", response.data);
       marcaje.id_user = (response.data as ResponseDto).id;
-      return await this.marcajeRepository.save(marcaje);
-
+      return {success: true, data: await this.marcajeRepository.save(marcaje)};
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        throw new UnauthorizedException(`Token no es válido`);
+        return {success: false, message: "Token no válido"}
       }
-      throw new UnauthorizedException('Ocurrió un error inesperado');
+      return {success: false, message: "Ocurrió un error inesperado"};
     }
     /*
       if(response.data) {

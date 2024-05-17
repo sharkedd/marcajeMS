@@ -23,14 +23,14 @@ export class MarcajeController {
       console.log("Controller")
       const response = await this.marcajeService.createMarcaje(createMarcaje.token);
       console.log("Respuesta: ", response);
-      /*
+      
       if (response?.success) {
         console.log(response.data);
         return response.data;
       } else {
         throw new HttpException(response.message, HttpStatus.BAD_REQUEST);
       }
-      */
+      
 
   }
 
