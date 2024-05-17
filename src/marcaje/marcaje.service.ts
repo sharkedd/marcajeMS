@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreateMarcajeDto } from './dto/create-marcaje.dto';
 import { UpdateMarcajeDto } from './dto/update-marcaje.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -6,6 +6,19 @@ import { Marcaje } from './entities/marcaje.entity';
 import { Repository } from 'typeorm';
 import * as moment from 'moment-timezone';
 import axios from 'axios';
+import { Interface } from 'readline';
+
+interface ResponseDto {
+  id: number;
+  password: string;
+  email: string;
+  birthday: string;
+}
+
+interface ErrorResponse {
+  message: string;
+  statusCode: number;
+}
 
 @Injectable()
 export class MarcajeService {
@@ -13,36 +26,33 @@ export class MarcajeService {
     @InjectRepository(Marcaje) private marcajeRepository: Repository<Marcaje>,
   ) {}
 
-  async createMarcaje(marcajeDto: CreateMarcajeDto) {
-    const { token } = marcajeDto;
-    const fechaActual = moment()
-      .tz('America/Santiago')
-      .format('DD-MM-YYYY HH:mm:ss');
-    console.log(token);
-    console.log(fechaActual);
+  async createMarcaje(token: string) {
 
     try {
-      const endpoint: string = `${process.env.EXPO_PUBLIC_MS_USER_URL}/auth/${token}`;
-      const response = await axios.get(endpoint);
-
-      const endpoint2: string = `${process.env.EXPO_PUBLIC_MS_USER_URL}/auth/${token}`;
-      const response2 = await axios.post(endpoint2, token);
-      
-      async function postDataWithoutBody(url, authToken) {
-        try {
-            const response = await axios.post(url, null /* Este es el body, se mete en { }*/, {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json' // Si no se envía data, el tipo de contenido puede ser opcional
-                }
-            });
-            console.log('Response:', response.data);
-            return response.data; // Opcional: devolver los datos de respuesta
-        } catch (error) {
-            console.log(error)
+      console.log(token);
+      const endpoint: string = `${process.env.EXPO_PUBLIC_MS_USER_URL}/auth/profile`;
+      console.log(endpoint);
+      const response = await axios.post<ResponseDto | ErrorResponse>(endpoint, {}, {
+        headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
         }
-      }
+      });
+      const marcaje = new Marcaje();
+      marcaje.date =  moment()
+      .tz('America/Santiago')
+      .format('DD-MM-YYYY HH:mm:ss');
+      console.log("Respuesta:", response.data);
+      marcaje.id_user = (response.data as ResponseDto).id;
+      return await this.marcajeRepository.save(marcaje);
 
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        throw new UnauthorizedException(`Token no es válido`);
+      }
+      throw new UnauthorizedException('Ocurrió un error inesperado');
+    }
+    /*
       if(response.data) {
         const marcaje = new Marcaje();
         marcaje.date =  moment()
@@ -57,6 +67,7 @@ export class MarcajeService {
     } catch (error: unknown) {
       return { success: false, message: 'Ocurrió un error' };
     }
+    */
   }
 
   findAll() {

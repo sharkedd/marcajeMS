@@ -18,19 +18,20 @@ export class MarcajeController {
   constructor(private readonly marcajeService: MarcajeService) {}
 
   @Post()
-  async create(@Body() marcajeDto: CreateMarcajeDto) {
-    try {
-      const response = await this.marcajeService.createMarcaje(marcajeDto);
+  async create(@Body() createMarcaje: CreateMarcajeDto) {
+
+      console.log("Controller")
+      const response = await this.marcajeService.createMarcaje(createMarcaje.token);
       console.log("Respuesta: ", response);
+      /*
       if (response?.success) {
         console.log(response.data);
         return response.data;
       } else {
         throw new HttpException(response.message, HttpStatus.BAD_REQUEST);
       }
-    } catch (error) {
-      throw new HttpException('Error interno del servidor', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+      */
+
   }
 
   @Get()
