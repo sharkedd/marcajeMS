@@ -25,13 +25,12 @@ export class MarcajeController {
       console.log("Respuesta: ", response);
       
       if (response?.success) {
-        console.log(response.data);
+        
         return response.data;
       } else {
         throw new HttpException(response.message, HttpStatus.BAD_REQUEST);
       }
-      
-
+      //Hola
   }
 
   @Get()
