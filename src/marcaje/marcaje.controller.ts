@@ -30,7 +30,6 @@ export class MarcajeController {
       } else {
         throw new HttpException(response.message, HttpStatus.BAD_REQUEST);
       }
-      
 
   }
 

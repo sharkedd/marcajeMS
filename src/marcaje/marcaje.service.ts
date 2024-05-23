@@ -10,7 +10,8 @@ import { Interface } from 'readline';
 
 interface ResponseDto {
   id: number;
-  password: string;
+  firstName: string;
+  lastName: string;
   email: string;
   birthday: string;
 }
@@ -47,7 +48,9 @@ export class MarcajeService {
       return {success: true, data: await this.marcajeRepository.save(marcaje)};
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        return {success: false, message: "Token no válido"}
+        //Axios error ---> Fallo utilizando axios
+        //401 error de autenticación 
+        return {success: false, message: "Autenticación inválida"}
       }
       return {success: false, message: "Ocurrió un error inesperado"};
     }
