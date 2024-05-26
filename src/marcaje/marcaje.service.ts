@@ -45,23 +45,28 @@ export class MarcajeService {
       const marcaje = new Marcaje();
       console.log("Respuesta:", response.data);
       marcaje.id_user = (response.data as ResponseDto).id;
-
+      
       const entryMarcaje = await this.findFromToday(marcaje.id_user, MarcajeType.ENTRY)
 
       if(entryMarcaje) {
         const exitMarcaje = await this.findFromToday(marcaje.id_user, MarcajeType.EXIT)
         console.log('marcaje de entrada existe')
-        console.log('Marcaje de salida: ', exitMarcaje)
         if(exitMarcaje) {
           console.log('marcaje salida existe')
           return {success: false, message: "Ya se registró marcaje de entrada y salida"}
         } else {
           console.log('marcaje salida no existe')
           marcaje.type = MarcajeType.EXIT;
-          return {success: true, data: await this.marcajeRepository.save(marcaje)}
+          const savedMarcaje = await this.marcajeRepository.save(marcaje);
+          const formattedMarcaje = await this.formatDate([savedMarcaje]);
+          return {success: true, data: formattedMarcaje[0]};
         }
       }
-      else { return {success: true, data: await this.marcajeRepository.save(marcaje)}; }
+      else { 
+        const savedMarcaje = await this.marcajeRepository.save(marcaje);
+        const formattedMarcaje = await this.formatDate([savedMarcaje]);
+        return {success: true, data: formattedMarcaje[0]};
+       }
       
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
@@ -82,8 +87,6 @@ export class MarcajeService {
     }));
   } 
   async findAll() {
-    console.log('Fecha actual:', moment().format('DD-MM-YYYY'));
-    console.log('Mañana:', (moment().add(1, 'days')).format('DD-MM-YYYY'))
     const marcajes = await this.marcajeRepository.find();
     return this.formatDate(marcajes);
   }
@@ -108,6 +111,16 @@ export class MarcajeService {
     })
   }
 
+  findFromTodayType(id: number, type: string) {
+    const enumType: MarcajeType = MarcajeType[type.toUpperCase() as keyof typeof MarcajeType];
+    
+    if(!enumType) {
+      throw new Error('Tipo de marcaje inválido (Este debe ser entry o exit)', )
+    }
+
+    return this.findFromToday(id, enumType);
+  }
+
   update(id: number, updateMarcajeDto: UpdateMarcajeDto) {
     return `This action updates a #${id} marcaje`;
   }
@@ -130,7 +143,6 @@ export class MarcajeService {
         date: Between(fromDate, untilDate),
       }
     })
-  
   }
 
   stringtoDate(date: string) {

@@ -28,10 +28,9 @@ export class MarcajeController {
       console.log("Respuesta: ", response);
       
       if (response?.success) {
-        console.log(response.data);
-        return response.data;
+        return {success: true, data: response.data};
       } else {
-        throw new HttpException(response.message, HttpStatus.BAD_REQUEST);
+        return {success: false, message: response.message};
       }
   }
 
@@ -48,6 +47,17 @@ export class MarcajeController {
   @Get('/date')
   findByDate(@Body() dateInterval: PeriodDto) {
     return this.marcajeService.getByPeriod(dateInterval);
+  }
+
+  @Get('/user/:id/:type')
+  existTimeRegistration(@Param('id') id:number, @Param('type') type: string) {
+    const existRegister = this.marcajeService.findFromTodayType(id, type)
+    
+    if(existRegister) {
+      return true;
+    } else {
+      return false;
+    }
   }
 
   @Get('/user/:id')
