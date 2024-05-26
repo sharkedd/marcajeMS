@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { MarcajeType } from '../enum/marcaje-type.enum';
 
 @Entity({ name: 'marcajes' })
 export class Marcaje {
@@ -8,6 +9,13 @@ export class Marcaje {
   @Column()
   id_user: number;
 
-  @Column()
-  date: string;
+  @CreateDateColumn({ type: "timestamp with time zone", default: () => "CURRENT_TIMESTAMP" })
+  date: Date;
+
+  @Column({
+    type: 'enum',
+    enum: MarcajeType,
+    default: MarcajeType.ENTRY
+  })
+  type: MarcajeType;
 }
