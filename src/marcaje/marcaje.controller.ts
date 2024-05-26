@@ -12,6 +12,9 @@ import {
 import { MarcajeService } from './marcaje.service';
 import { CreateMarcajeDto } from './dto/create-marcaje.dto';
 import { UpdateMarcajeDto } from './dto/update-marcaje.dto';
+import { timeInterval } from 'rxjs';
+import { PeriodDto } from './dto/get-marcaje-dates';
+import { MarcajeType } from './enum/marcaje-type.enum';
 
 @Controller('marcaje')
 export class MarcajeController {
@@ -30,17 +33,26 @@ export class MarcajeController {
       } else {
         throw new HttpException(response.message, HttpStatus.BAD_REQUEST);
       }
-
   }
 
-  @Get()
-  findAll() {
+  @Get('/admin')
+  async findAll() {
     return this.marcajeService.findAll();
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.marcajeService.findFromUser(+id);
+  @Delete('/admin')
+  async deleteAll() {
+    return this.marcajeService.removeAll();
+  }
+
+  @Get('/date')
+  findByDate(@Body() dateInterval: PeriodDto) {
+    return this.marcajeService.getByPeriod(dateInterval);
+  }
+
+  @Get('/user/:id')
+  findFromUser(@Param('id') id: number) {
+    return this.marcajeService.findAllFromUser(+id);
   }
 
   @Patch(':id')
@@ -51,5 +63,7 @@ export class MarcajeController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.marcajeService.remove(+id);
-  }
+  } 
+
+  
 }

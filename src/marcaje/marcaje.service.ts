@@ -3,10 +3,13 @@ import { CreateMarcajeDto } from './dto/create-marcaje.dto';
 import { UpdateMarcajeDto } from './dto/update-marcaje.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Marcaje } from './entities/marcaje.entity';
-import { Repository } from 'typeorm';
+import { Between, Repository } from 'typeorm';
 import * as moment from 'moment-timezone';
-import axios from 'axios';
+import axios, { all } from 'axios';
 import { Interface } from 'readline';
+import { MarcajeType } from './enum/marcaje-type.enum';
+import { PeriodDto } from './dto/get-marcaje-dates';
+import { format } from 'path';
 
 interface ResponseDto {
   id: number;
@@ -40,12 +43,26 @@ export class MarcajeService {
         }
       });
       const marcaje = new Marcaje();
-      marcaje.date =  moment()
-      .tz('America/Santiago')
-      .format('DD-MM-YYYY HH:mm:ss');
       console.log("Respuesta:", response.data);
       marcaje.id_user = (response.data as ResponseDto).id;
-      return {success: true, data: await this.marcajeRepository.save(marcaje)};
+
+      const entryMarcaje = await this.findFromToday(marcaje.id_user, MarcajeType.ENTRY)
+
+      if(entryMarcaje) {
+        const exitMarcaje = await this.findFromToday(marcaje.id_user, MarcajeType.EXIT)
+        console.log('marcaje de entrada existe')
+        console.log('Marcaje de salida: ', exitMarcaje)
+        if(exitMarcaje) {
+          console.log('marcaje salida existe')
+          return {success: false, message: "Ya se registró marcaje de entrada y salida"}
+        } else {
+          console.log('marcaje salida no existe')
+          marcaje.type = MarcajeType.EXIT;
+          return {success: true, data: await this.marcajeRepository.save(marcaje)}
+        }
+      }
+      else { return {success: true, data: await this.marcajeRepository.save(marcaje)}; }
+      
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
         //Axios error ---> Fallo utilizando axios
@@ -54,32 +71,39 @@ export class MarcajeService {
       }
       return {success: false, message: "Ocurrió un error inesperado"};
     }
-    /*
-      if(response.data) {
-        const marcaje = new Marcaje();
-        marcaje.date =  moment()
-        .tz('America/Santiago')
-        .format('DD-MM-YYYY HH:mm:ss');
-        marcaje.id_user = response2.data;
-        return  { success: true, data: await this.marcajeRepository.save(marcaje)};
-      } else {
-        return { success: false, message: 'Token Inválido'}
-      }
-
-    } catch (error: unknown) {
-      return { success: false, message: 'Ocurrió un error' };
-    }
-    */
   }
 
-  findAll() {
-    return this.marcajeRepository.find();
+  async formatDate(marcajes: Marcaje[]) {
+    return marcajes.map(marcaje => ({
+      id: marcaje.id,
+      id_user: marcaje.id_user,
+      date: moment.utc(marcaje.date).tz('America/Santiago').format('DD-MM-YYYY HH:mm:ss'),
+      type: marcaje.type,
+    }));
+  } 
+  async findAll() {
+    console.log('Fecha actual:', moment().format('DD-MM-YYYY'));
+    console.log('Mañana:', (moment().add(1, 'days')).format('DD-MM-YYYY'))
+    const marcajes = await this.marcajeRepository.find();
+    return this.formatDate(marcajes);
   }
 
-  findFromUser(id: number) {
+  findAllFromUser(id: number) {
     return this.marcajeRepository.find({
       where: {
         id_user: id,
+      }
+    })
+  }
+
+  findFromToday(id: number, type: MarcajeType) {
+    const today = this.stringtoDate(moment().format('DD-MM-YYYY'));
+    const tomorrow = this.stringtoDate((moment().add(1, 'days')).format('DD-MM-YYYY'));
+
+    return this.marcajeRepository.findOne({
+      where: {
+        date: Between(today, tomorrow),
+        type: type,
       }
     })
   }
@@ -89,6 +113,28 @@ export class MarcajeService {
   }
 
   remove(id: number) {
-    return `This action removes a #${id} marcaje`;
+    return 'remove';
+  }
+
+  removeAll() {
+    this.marcajeRepository.clear()
+    return 'Clear';
+  }
+
+  getByPeriod(dateInterval: PeriodDto) {
+    const fromDate = this.stringtoDate(dateInterval.fechaInicio);
+    const untilDate = this.stringtoDate(dateInterval.fechaFin);
+
+    return this.marcajeRepository.find({
+      where: {
+        date: Between(fromDate, untilDate),
+      }
+    })
+  
+  }
+
+  stringtoDate(date: string) {
+    const dateFormat = moment(date.split(' '), 'DD-MM-YYYY').toDate();
+    return dateFormat;
   }
 }
