@@ -26,6 +26,7 @@ interface ErrorResponse {
 
 @Injectable()
 export class MarcajeService {
+
   constructor(
     @InjectRepository(Marcaje) private marcajeRepository: Repository<Marcaje>,
   ) {}
@@ -33,38 +34,37 @@ export class MarcajeService {
   async createMarcaje(token: string) {
 
     try {
-      console.log(token);
+      console.log('Token recibido:', token);
       const endpoint: string = `${process.env.EXPO_PUBLIC_MS_USER_URL}/auth/profile`;
       console.log(endpoint);
       const response = await axios.post<ResponseDto | ErrorResponse>(endpoint, {}, {
         headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
-        }
-      });
-      const marcaje = new Marcaje();
+        },
+        
+      },);
+      const mark = new Marcaje();
       console.log("Respuesta:", response.data);
-      marcaje.id_user = (response.data as ResponseDto).id;
-      
-      const entryMarcaje = await this.findFromToday(marcaje.id_user, MarcajeType.ENTRY)
-
-      if(entryMarcaje) {
-        const exitMarcaje = await this.findFromToday(marcaje.id_user, MarcajeType.EXIT)
+      mark.id_user = (response.data as ResponseDto).id;
+      const entryMark = await this.findFromToday(mark.id_user, MarcajeType.ENTRY)
+      if(entryMark) {
+        const exitMarc = await this.findFromToday(mark.id_user, MarcajeType.EXIT)
         console.log('marcaje de entrada existe')
-        if(exitMarcaje) {
+        if(exitMarc) {
           console.log('marcaje salida existe')
           return {success: false, message: "Ya se registró marcaje de entrada y salida"}
         } else {
           console.log('marcaje salida no existe')
-          marcaje.type = MarcajeType.EXIT;
-          const savedMarcaje = await this.marcajeRepository.save(marcaje);
+          mark.type = MarcajeType.EXIT;
+          const savedMarcaje = await this.marcajeRepository.save(mark);
           const formattedMarcaje = await this.formatDate([savedMarcaje]);
           return {success: true, data: formattedMarcaje[0]};
         }
       }
       else { 
-        const savedMarcaje = await this.marcajeRepository.save(marcaje);
-        const formattedMarcaje = await this.formatDate([savedMarcaje]);
+        const savedMark = await this.marcajeRepository.save(mark);
+        const formattedMarcaje = await this.formatDate([savedMark]);
         return {success: true, data: formattedMarcaje[0]};
        }
       
@@ -74,29 +74,32 @@ export class MarcajeService {
         //401 error de autenticación 
         return {success: false, message: "Autenticación inválida"}
       }
+      
       return {success: false, message: "Ocurrió un error inesperado"};
     }
   }
 
-  async formatDate(marcajes: Marcaje[]) {
-    return marcajes.map(marcaje => ({
-      id: marcaje.id,
-      id_user: marcaje.id_user,
-      date: moment.utc(marcaje.date).tz('America/Santiago').format('DD-MM-YYYY HH:mm:ss'),
-      type: marcaje.type,
+  async formatDate(marks: Marcaje[]) {
+    return marks.map(mark => ({
+      id: mark.id,
+      id_user: mark.id_user,
+      date: moment.utc(mark.date).tz('America/Santiago').format('DD-MM-YYYY HH:mm:ss'),
+      type: mark.type,
     }));
   } 
   async findAll() {
-    const marcajes = await this.marcajeRepository.find();
-    return this.formatDate(marcajes);
+    const marks = await this.marcajeRepository.find();
+    return this.formatDate(marks);
   }
 
-  findAllFromUser(id: number) {
-    return this.marcajeRepository.find({
+  async findAllFromUser(id: number) {
+    const marks = await this.marcajeRepository.find({
       where: {
         id_user: id,
       }
     })
+
+    return this.formatDate(marks);
   }
 
   findFromToday(id: number, type: MarcajeType) {
@@ -107,18 +110,25 @@ export class MarcajeService {
       where: {
         date: Between(today, tomorrow),
         type: type,
+        id_user: id
       }
     })
   }
 
-  findFromTodayType(id: number, type: string) {
-    const enumType: MarcajeType = MarcajeType[type.toUpperCase() as keyof typeof MarcajeType];
-    
-    if(!enumType) {
-      throw new Error('Tipo de marcaje inválido (Este debe ser entry o exit)', )
+  async findFromTodayType(idUser: number) {
+    const exitRegister = await this.findFromToday(idUser, MarcajeType.EXIT)
+    if(exitRegister) {
+      console.log(exitRegister);
+      return(2)
     }
+    const entryRegister = await this.findFromToday(idUser, MarcajeType.ENTRY)
+    if(entryRegister) {
+      console.log(entryRegister);
+      return(1)
+    }
+    
+    return(0)
 
-    return this.findFromToday(id, enumType);
   }
 
   update(id: number, updateMarcajeDto: UpdateMarcajeDto) {
@@ -134,19 +144,45 @@ export class MarcajeService {
     return 'Clear';
   }
 
-  getByPeriod(dateInterval: PeriodDto) {
-    const fromDate = this.stringtoDate(dateInterval.fechaInicio);
-    const untilDate = this.stringtoDate(dateInterval.fechaFin);
+  async getByPeriod(idUser:number, dateInterval: PeriodDto) {
+    const fromDate = this.stringtoDate(dateInterval.startDate);
+    const untilDate = this.stringtoDatePlus(dateInterval.endDate);
 
-    return this.marcajeRepository.find({
+    const marks: Marcaje[] = await this.marcajeRepository.find({
       where: {
         date: Between(fromDate, untilDate),
+        id_user: idUser,
       }
     })
+
+    return this.formatDate(marks);
   }
 
   stringtoDate(date: string) {
     const dateFormat = moment(date.split(' '), 'DD-MM-YYYY').toDate();
     return dateFormat;
   }
+
+  stringtoDatePlus(date: string) {
+    const dateFormat = moment(date.split(' '), 'DD-MM-YYYY').add(1, 'days').toDate();
+    return dateFormat;
+  }
+
+  /*
+  async getWeekStart(idUser: number) {
+    const startOfWeek = moment().startOf('week').add(0, 'days').toDate();
+    const endOfWeek = moment().endOf('week').add(1, 'days').toDate();
+    console.log(startOfWeek);
+    console.log(endOfWeek);
+
+    const marks: Marcaje[] = await this.marcajeRepository.find({
+      where: {
+        date: Between(startOfWeek, endOfWeek),
+        id_user: idUser,
+      }
+    })
+
+    return this.formatDate(marks);
+  }
+  */
 }
