@@ -1,4 +1,4 @@
 export class PeriodDto {
-    fechaInicio: string;
-    fechaFin: string;
+    startDate: string;
+    endDate: string;
 }

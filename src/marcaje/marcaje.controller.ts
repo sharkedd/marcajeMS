@@ -39,25 +39,23 @@ export class MarcajeController {
     return this.marcajeService.findAll();
   }
 
-  @Delete('/admin')
-  async deleteAll() {
-    return this.marcajeService.removeAll();
+  @Get('/date/:id')
+  findByDate(
+    @Param('id') id: number,
+    @Body() dateInterval: PeriodDto) {
+    return this.marcajeService.getByPeriod(id, dateInterval);
   }
 
-  @Get('/date')
-  findByDate(@Body() dateInterval: PeriodDto) {
-    return this.marcajeService.getByPeriod(dateInterval);
+  /*
+  @Get('/user/:id/week')
+  obtainWeekStart(@Param('id') id: number) {
+    return this.marcajeService.getWeekStart(id);
   }
+  */
 
-  @Get('/user/:id/:type')
-  existTimeRegistration(@Param('id') id:number, @Param('type') type: string) {
-    const existRegister = this.marcajeService.findFromTodayType(id, type)
-    
-    if(existRegister) {
-      return true;
-    } else {
-      return false;
-    }
+  @Get('/user/:id/today')
+  existTimeRegistration(@Param('id') id:number) {
+    return this.marcajeService.findFromTodayType(id);
   }
 
   @Get('/user/:id')
