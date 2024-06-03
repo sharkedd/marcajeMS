@@ -39,11 +39,6 @@ export class MarcajeController {
     return this.marcajeService.findAll();
   }
 
-  @Delete('/admin')
-  async deleteAll() {
-    return this.marcajeService.removeAll();
-  }
-
   @Get('/date/:id')
   findByDate(
     @Param('id') id: number,
