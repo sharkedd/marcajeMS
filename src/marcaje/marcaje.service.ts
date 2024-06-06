@@ -168,7 +168,7 @@ export class MarcajeService {
     return dateFormat;
   }
 
-  /*
+  
   async getWeekStart(idUser: number) {
     const startOfWeek = moment().startOf('week').add(0, 'days').toDate();
     const endOfWeek = moment().endOf('week').add(1, 'days').toDate();
@@ -184,5 +184,5 @@ export class MarcajeService {
 
     return this.formatDate(marks);
   }
-  */
+  
 }
