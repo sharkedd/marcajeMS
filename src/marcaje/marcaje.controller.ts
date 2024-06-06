@@ -46,12 +46,12 @@ export class MarcajeController {
     return this.marcajeService.getByPeriod(id, dateInterval);
   }
 
-  /*
+  
   @Get('/user/:id/week')
   obtainWeekStart(@Param('id') id: number) {
     return this.marcajeService.getWeekStart(id);
   }
-  */
+  
 
   @Get('/user/:id/today')
   existTimeRegistration(@Param('id') id:number) {
