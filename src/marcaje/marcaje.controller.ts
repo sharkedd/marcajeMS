@@ -39,17 +39,22 @@ export class MarcajeController {
     return this.marcajeService.findAll();
   }
 
-  @Get('/date/:id')
-  findByDate(
+  @Post('/date/:id')
+  async findByDate(
     @Param('id') id: number,
-    @Body() dateInterval: PeriodDto) {
-    return this.marcajeService.getByPeriod(id, dateInterval);
-  }
-
+    @Body() payload: { dateInterval: { startDate: string, endDate: string } }
+  ) {
+    const startDate = payload.dateInterval.startDate;
+    const endDate = payload.dateInterval.endDate;
   
+    // Hacer lo que necesites con startDate y endDate
+    // Por ejemplo, llamar a un servicio con estos valores
+    return await this.marcajeService.getByPeriod(id, startDate, endDate);
+  }
+   
   @Get('/user/week/:id')
-  obtainWeekStart(@Param('id') id: number) {
-    return this.marcajeService.getWeekStart(id);
+  async obtainWeekStart(@Param('id') id: number) {
+    return await this.marcajeService.getWeekStart(id);
   }
   
 

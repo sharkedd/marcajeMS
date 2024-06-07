@@ -144,9 +144,12 @@ export class MarcajeService {
     return 'Clear';
   }
 
-  async getByPeriod(idUser:number, dateInterval: PeriodDto) {
-    const fromDate = this.stringtoDate(dateInterval.startDate);
-    const untilDate = this.stringtoDatePlus(dateInterval.endDate);
+  async getByPeriod(idUser:number, startDate: string, endDate: string) {
+    const fromDate = moment(startDate, 'DD-MM-YYYY').toDate();
+    console.log('Fecha de entrada:', fromDate);
+
+    const untilDate = moment(endDate, 'DD-MM-YYYY').toDate();
+    console.log('Fecha de salida:', untilDate);
 
     const marks: Marcaje[] = await this.marcajeRepository.find({
       where: {
@@ -154,7 +157,6 @@ export class MarcajeService {
         id_user: idUser,
       }
     })
-
     return this.formatDate(marks);
   }
 
