@@ -1,14 +1,14 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { CreateMarcajeDto } from './dto/create-marcaje.dto';
-import { UpdateMarcajeDto } from './dto/update-marcaje.dto';
+import { CreateMarcajeDto } from '../dto/create-marcaje.dto';
+import { UpdateMarcajeDto } from '../dto/update-marcaje.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Marcaje } from './entities/marcaje.entity';
+import { Marcaje } from '../entities/marcaje.entity';
 import { Between, Repository } from 'typeorm';
 import * as moment from 'moment-timezone';
 import axios, { all } from 'axios';
 import { Interface } from 'readline';
-import { MarcajeType } from './enum/marcaje-type.enum';
-import { PeriodDto } from './dto/get-marcaje-dates';
+import { MarcajeType } from '../enum/marcaje-type.enum';
+import { PeriodDto } from '../dto/get-marcaje-dates';
 import { format } from 'path';
 
 interface ResponseDto {
@@ -31,7 +31,7 @@ export class MarcajeService {
     @InjectRepository(Marcaje) private marcajeRepository: Repository<Marcaje>,
   ) {}
 
-  async createMarcaje(token: string) {
+  async createMarcaje(token: string, latCoordinate: string, longCoordinate: string) {
 
     try {
       console.log('Token recibido:', token);
@@ -45,6 +45,15 @@ export class MarcajeService {
         
       },);
       const mark = new Marcaje();
+      
+      if(latCoordinate) {
+        mark.latCoordinate = latCoordinate;
+      }
+
+      if(longCoordinate) {
+        mark.longCoordinate = longCoordinate;
+      }
+
       console.log("Respuesta:", response.data);
       mark.id_user = (response.data as ResponseDto).id;
       const entryMark = await this.findFromToday(mark.id_user, MarcajeType.ENTRY)
@@ -85,10 +94,17 @@ export class MarcajeService {
       id_user: mark.id_user,
       date: moment.utc(mark.date).tz('America/Santiago').format('DD-MM-YYYY HH:mm:ss'),
       type: mark.type,
+      adminFlag: mark.adminFlag,
+      latCoordinate: mark.latCoordinate,
+      longCoordinate: mark.longCoordinate,
     }));
   } 
   async findAll() {
-    const marks = await this.marcajeRepository.find();
+    const marks = await this.marcajeRepository.find({
+      order: {
+        date: 'DESC'
+      }
+    });
     return this.formatDate(marks);
   }
 
@@ -96,6 +112,9 @@ export class MarcajeService {
     const marks = await this.marcajeRepository.find({
       where: {
         id_user: id,
+      },
+      order: {
+        date: 'DESC'
       }
     })
 
@@ -131,9 +150,23 @@ export class MarcajeService {
 
   }
 
-  update(id: number, updateMarcajeDto: UpdateMarcajeDto) {
-    return `This action updates a #${id} marcaje`;
+  async update(id: number, date: string) {
+  console.log('Original date:', date);
+  if (!moment(date, 'DD-MM-YYYY HH:mm:ss', true).isValid()) {
+    console.log('Fecha inválida');
+    return `Fecha inválida: ${date}`;
   }
+
+  const convertedDate = moment(date, 'DD-MM-YYYY HH:mm:ss').add(4, "hour").format('YYYY-MM-DD HH:mm:ss.SSSSSS+00');
+  console.log('utc Date', convertedDate);
+  await this.marcajeRepository.update(id, { date: convertedDate, adminFlag: true,})
+  return this.marcajeRepository.findOne({
+    where: {
+      id: id,
+    }
+  })
+  }
+  
 
   remove(id: number) {
     return 'remove';
@@ -181,10 +214,18 @@ export class MarcajeService {
       where: {
         date: Between(startOfWeek, endOfWeek),
         id_user: idUser,
+      },
+      order: {
+        date: 'DESC'
       }
     })
 
     return this.formatDate(marks);
   }
+
+  async adminCreate() {
+    
+  }
   
 }
+

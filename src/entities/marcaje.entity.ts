@@ -18,4 +18,13 @@ export class Marcaje {
     default: MarcajeType.ENTRY
   })
   type: MarcajeType;
+
+  @Column({default: false})
+  adminFlag: boolean;
+
+  @Column({ nullable: true})
+  latCoordinate: string;
+
+  @Column({ nullable: true})
+  longCoordinate: string;;
 }

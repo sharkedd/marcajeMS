@@ -10,11 +10,12 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { MarcajeService } from './marcaje.service';
-import { CreateMarcajeDto } from './dto/create-marcaje.dto';
-import { UpdateMarcajeDto } from './dto/update-marcaje.dto';
+import { CreateMarcajeDto } from '../dto/create-marcaje.dto';
+import { UpdateMarcajeDto } from '../dto/update-marcaje.dto';
 import { timeInterval } from 'rxjs';
-import { PeriodDto } from './dto/get-marcaje-dates';
-import { MarcajeType } from './enum/marcaje-type.enum';
+import { PeriodDto } from '../dto/get-marcaje-dates';
+import { MarcajeType } from '../enum/marcaje-type.enum';
+import { AdminMarcajeDto } from 'src/dto/admin-marcaje.dto';
 
 @Controller('marcaje')
 export class MarcajeController {
@@ -24,7 +25,11 @@ export class MarcajeController {
   async create(@Body() createMarcaje: CreateMarcajeDto) {
 
       console.log("Controller")
-      const response = await this.marcajeService.createMarcaje(createMarcaje.token);
+
+      const {token} = createMarcaje;
+      const {latCoordinate} = createMarcaje;
+      const {longCoordinate} = createMarcaje;
+      const response = await this.marcajeService.createMarcaje(token, latCoordinate, longCoordinate);
       console.log("Respuesta: ", response);
       
       if (response?.success) {
@@ -32,6 +37,12 @@ export class MarcajeController {
       } else {
         return {success: false, message: response.message};
       }
+  }
+
+  @Post('/admin')
+  async marcajeAdmin(@Body() adminMarcajeDto: AdminMarcajeDto) {
+    
+    return this.marcajeService.adminCreate();
   }
 
   @Get('/admin')
@@ -42,13 +53,10 @@ export class MarcajeController {
   @Post('/date/:id')
   async findByDate(
     @Param('id') id: number,
-    @Body() payload: { dateInterval: { startDate: string, endDate: string } }
-  ) {
+    @Body() payload: { dateInterval: { startDate: string, endDate: string } })
+     {
     const startDate = payload.dateInterval.startDate;
     const endDate = payload.dateInterval.endDate;
-  
-    // Hacer lo que necesites con startDate y endDate
-    // Por ejemplo, llamar a un servicio con estos valores
     return await this.marcajeService.getByPeriod(id, startDate, endDate);
   }
    
@@ -68,15 +76,16 @@ export class MarcajeController {
     return this.marcajeService.findAllFromUser(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateMarcajeDto: UpdateMarcajeDto) {
-    return this.marcajeService.update(+id, updateMarcajeDto);
+  @Patch('/admin/:id')
+  update(@Param('id') id: number, @Body() updateMarcaje: UpdateMarcajeDto) {
+    const {date} = updateMarcaje;  
+    return this.marcajeService.update(id, date);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.marcajeService.remove(+id);
-  } 
+  }
 
-  
+
 }
