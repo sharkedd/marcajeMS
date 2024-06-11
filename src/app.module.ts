@@ -3,7 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MarcajeModule } from './marcaje/marcaje.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Marcaje } from './marcaje/entities/marcaje.entity';
+import { Marcaje } from './entities/marcaje.entity';
 import { ConfigModule } from '@nestjs/config';
 
 @Module({
