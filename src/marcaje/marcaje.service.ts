@@ -182,13 +182,11 @@ export class MarcajeService {
   async update(id: number, date: string) {
     console.log('Original date:', date);
     if (!moment(date, 'DD-MM-YYYY HH:mm:ss', true).isValid()) {
-      console.log('Fecha inválida');
-      return `Fecha inválida: ${date}`;
+      console.log( `Fecha inválida: ${date}`);
+      return null;
     }
 
-    const convertedDate = moment(date, 'DD-MM-YYYY HH:mm:ss')
-      .add(4, 'hour')
-      .format('YYYY-MM-DD HH:mm:ss.SSSSSS+00');
+    const convertedDate = this.convertDate(date);
     console.log('utc Date', convertedDate);
     await this.marcajeRepository.update(id, {
       date: convertedDate,
@@ -199,6 +197,14 @@ export class MarcajeService {
         id: id,
       },
     });
+  }
+
+  convertDate(date: string) {
+    const newDate =  moment(date, 'DD-MM-YYYY HH:mm:ss')
+    .add(4, 'hour')
+    .format('YYYY-MM-DD HH:mm:ss.SSSSSS+00');
+    console.log('utc Date', newDate);
+    return newDate;
   }
 
   remove(id: number) {
@@ -259,17 +265,6 @@ export class MarcajeService {
 
   async adminCreate(token: string, idUser: number, date: string) {
 
-    /*
-      1. Verificar Admin @Get /auth/admin/role
-      2. Verificar formato de fecha  ---> Aprender a usar pipes en el futuro
-      3. Obtener cantidad de marcajes de ese día 
-      4. 0 --> crear entry, 1 --> crear exit, 2 --> No permitir
-        *Se puede crear marcaje
-         4.1 Crear marcaje, setear Lat y Long en 0 junto a Admin Flag
-        *Marcaje es salida
-        4.2 Verificar que salida tenga fecha mayor que entrada
-    */
-
     console.log('Token recibido:', token);
     const endpoint: string = `${process.env.EXPO_PUBLIC_MS_USER_URL}/auth/admin/role`;
     console.log(endpoint);
@@ -300,11 +295,82 @@ export class MarcajeService {
     console.log('Original date:', date);
     if (!moment(date, 'DD-MM-YYYY HH:mm:ss', true).isValid()) {
       console.log('Fecha inválida');
-      return `Fecha inválida: ${date}`;
+      return {success: false, message: `fecha ${date} posee un formato inválido, debe ser DD-MM-YYYY`};
     } 
-    const convertedDate = moment(date, 'DD-MM-YYYY HH:mm:ss')
-      .add(4, 'hour')
-      .format('YYYY-MM-DD HH:mm:ss.SSSSSS+00');
+    const startDate = moment(date.split(' '), 'DD-MM-YYYY').format('DD-MM-YYYY');
+    const endDate = moment(date.split(' '), 'DD-MM-YYYY').add(1, 'days').format('DD-MM-YYYY');
+    console.log(startDate);
+    console.log(endDate);
+
+    const mark = new Marcaje();
+    mark.latCoordinate = '0';
+    mark.longCoordinate = '0';
+    mark.adminFlag = true;
+    mark.id_user = idUser;
+
+    const period: PeriodDto  = 
+      {
+        startDate: startDate,
+        endDate: endDate
+      }
+    const entryMark = await this.findFromToday(
+      idUser,
+      MarcajeType.ENTRY,
+      period,
+    );
+    if (entryMark) {
+      console.log(entryMark);
+      const exitMarc = await this.findFromToday(
+        idUser,
+        MarcajeType.EXIT,
+        period,
+      );
+      console.log('marcaje de entrada existe');
+      if (exitMarc) {
+        console.log('marcaje salida existe');
+        return {
+          success: false,
+          message: 'Ya se registró marcaje de entrada y salida',
+        }
+        } else {
+          console.log('marcaje salida no existe');
+          /*
+          const entryDate = moment(this.convertDate(date)).toDate();
+          const exitDate = moment(entryMark.date).toDate();
+          if(entryDate < exitDate) {
+            return {
+              success: false,
+              message: `Fecha de entrada ${entryDate} < fecha salida ${exitDate}`
+            };
+          }
+          */
+          mark.type = MarcajeType.EXIT;
+          let savedMarcaje = await this.marcajeRepository.save(mark);
+          console.log('Marcaje guardado');
+          console.log(savedMarcaje);
+          savedMarcaje = await this.update(mark.id, date);
+          console.log('Marcaje optimizado');
+          console.log(savedMarcaje);
+          const formattedMarcaje = await this.formatDate([savedMarcaje]);
+          console.log("marcaje formateado");
+          console.log(formattedMarcaje);
+          return { success: true, data: formattedMarcaje[0] };
+        }
+      } else {
+        let savedMarcaje = await this.marcajeRepository.save(mark);
+          console.log('Marcaje guardado');
+          console.log(savedMarcaje);
+          savedMarcaje = await this.update(mark.id, date);
+          console.log('Marcaje optimizado');
+          console.log(savedMarcaje);
+          const formattedMarcaje = await this.formatDate([savedMarcaje]);
+          console.log("marcaje formateado");
+          console.log(formattedMarcaje);
+        return { success: true, data: formattedMarcaje[0] };
+      }
+      
   }
+  
+
 
 }
