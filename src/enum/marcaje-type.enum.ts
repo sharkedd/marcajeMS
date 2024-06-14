@@ -1,5 +1,4 @@
 export enum MarcajeType {
-    ENTRY = 'entry',
-    EXIT = 'exit'
+  ENTRY = 'entry',
+  EXIT = 'exit',
 }
-

@@ -1,5 +1,6 @@
 export class AdminMarcajeDto {
-    token: string;
-    idUser: number;
-    date: string;
-  }
+  token: string;
+  idUser: number;
+  date: string;
+}
+

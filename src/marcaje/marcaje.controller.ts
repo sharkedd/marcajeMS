@@ -23,26 +23,31 @@ export class MarcajeController {
 
   @Post()
   async create(@Body() createMarcaje: CreateMarcajeDto) {
+    console.log('Controller');
 
-      console.log("Controller")
+    const { token } = createMarcaje;
+    const { latCoordinate } = createMarcaje;
+    const { longCoordinate } = createMarcaje;
+    const response = await this.marcajeService.createMarcaje(
+      token,
+      latCoordinate,
+      longCoordinate,
+    );
+    console.log('Respuesta: ', response);
 
-      const {token} = createMarcaje;
-      const {latCoordinate} = createMarcaje;
-      const {longCoordinate} = createMarcaje;
-      const response = await this.marcajeService.createMarcaje(token, latCoordinate, longCoordinate);
-      console.log("Respuesta: ", response);
-      
-      if (response?.success) {
-        return {success: true, data: response.data};
-      } else {
-        return {success: false, message: response.message};
-      }
+    if (response?.success) {
+      return { success: true, data: response.data };
+    } else {
+      return { success: false, message: response.message };
+    }
   }
 
   @Post('/admin')
   async marcajeAdmin(@Body() adminMarcajeDto: AdminMarcajeDto) {
-    
-    return this.marcajeService.adminCreate();
+    const {token} = adminMarcajeDto;
+    const {idUser} = adminMarcajeDto;
+    const {date} = adminMarcajeDto
+    return this.marcajeService.adminCreate(token, idUser, date);
   }
 
   @Get('/admin')
@@ -53,22 +58,22 @@ export class MarcajeController {
   @Post('/date/:id')
   async findByDate(
     @Param('id') id: number,
-    @Body() payload: { dateInterval: { startDate: string, endDate: string } })
-     {
+    @Body() payload: { dateInterval: { startDate: string; endDate: string } },
+  ) {
     const startDate = payload.dateInterval.startDate;
     const endDate = payload.dateInterval.endDate;
     return await this.marcajeService.getByPeriod(id, startDate, endDate);
   }
-   
+
   @Get('/user/week/:id')
   async obtainWeekStart(@Param('id') id: number) {
     return await this.marcajeService.getWeekStart(id);
   }
-  
 
-  @Get('/user/today/:id')
-  existTimeRegistration(@Param('id') id: number) {
-    return this.marcajeService.findFromTodayType(id);
+  @Post('/user/today/:id')
+  existTimeRegistration(@Param('id') id: number, @Body() period: PeriodDto) {
+    console.log(period);
+    return this.marcajeService.findFromTodayType(id, period);
   }
 
   @Get('/user/:id')
@@ -78,7 +83,7 @@ export class MarcajeController {
 
   @Patch('/admin/:id')
   update(@Param('id') id: number, @Body() updateMarcaje: UpdateMarcajeDto) {
-    const {date} = updateMarcaje;  
+    const { date } = updateMarcaje;
     return this.marcajeService.update(id, date);
   }
 
@@ -86,6 +91,4 @@ export class MarcajeController {
   remove(@Param('id') id: string) {
     return this.marcajeService.remove(+id);
   }
-
-
 }
