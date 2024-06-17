@@ -6,15 +6,11 @@ import {
   Patch,
   Param,
   Delete,
-  HttpException,
-  HttpStatus,
 } from '@nestjs/common';
-import { MarcajeService } from './marcaje.service';
-import { CreateMarcajeDto } from '../dto/create-marcaje.dto';
-import { UpdateMarcajeDto } from '../dto/update-marcaje.dto';
-import { timeInterval } from 'rxjs';
-import { PeriodDto } from '../dto/get-marcaje-dates';
-import { MarcajeType } from '../enum/marcaje-type.enum';
+import { MarcajeService } from '../services/marcaje.service';
+import { CreateMarcajeDto } from '../../dto/create-marcaje.dto';
+import { UpdateMarcajeDto } from '../../dto/update-marcaje.dto';
+import { PeriodDto } from '../../dto/get-marcaje-dates';
 import { AdminMarcajeDto } from 'src/dto/admin-marcaje.dto';
 
 @Controller('marcaje')
@@ -33,9 +29,9 @@ export class MarcajeController {
       latCoordinate,
       longCoordinate,
     );
-    console.log('Respuesta: ', response);
 
     if (response?.success) {
+      console.log('Respuesta: ', response.data);
       return { success: true, data: response.data };
     } else {
       return { success: false, message: response.message };
@@ -44,9 +40,9 @@ export class MarcajeController {
 
   @Post('/admin')
   async marcajeAdmin(@Body() adminMarcajeDto: AdminMarcajeDto) {
-    const {token} = adminMarcajeDto;
-    const {idUser} = adminMarcajeDto;
-    const {date} = adminMarcajeDto
+    const { token } = adminMarcajeDto;
+    const { idUser } = adminMarcajeDto;
+    const { date } = adminMarcajeDto;
     return this.marcajeService.adminCreate(token, idUser, date);
   }
 

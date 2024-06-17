@@ -3,4 +3,3 @@ export class AdminMarcajeDto {
   idUser: number;
   date: string;
 }
-

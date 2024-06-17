@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { MarcajeModule } from './marcaje/marcaje.module';
+import { MarcajeModule } from './marcaje/modules/marcaje.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Marcaje } from './entities/marcaje.entity';
 import { ConfigModule } from '@nestjs/config';
+import { MonthlyAverageHours } from './entities/monthly-average-hours';
+import { ScheduleModule } from '@nestjs/schedule';
+import { YearlyAverageHours } from './entities/yearly-average-hours.entity';
 
 @Module({
   imports: [
@@ -15,11 +18,12 @@ import { ConfigModule } from '@nestjs/config';
       username: 'postgres',
       password: 'jmcr0612',
       database: 'postgres',
-      entities: [Marcaje],
+      entities: [Marcaje, MonthlyAverageHours, YearlyAverageHours],
       synchronize: true,
     }),
     ConfigModule.forRoot(),
     MarcajeModule,
+    ScheduleModule.forRoot()
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,14 +1,14 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { CreateMarcajeDto } from '../dto/create-marcaje.dto';
-import { UpdateMarcajeDto } from '../dto/update-marcaje.dto';
+import { CreateMarcajeDto } from '../../dto/create-marcaje.dto';
+import { UpdateMarcajeDto } from '../../dto/update-marcaje.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Marcaje } from '../entities/marcaje.entity';
+import { Marcaje } from '../../entities/marcaje.entity';
 import { Between, Repository } from 'typeorm';
 import * as moment from 'moment-timezone';
 import axios, { all } from 'axios';
 import { Interface } from 'readline';
-import { MarcajeType } from '../enum/marcaje-type.enum';
-import { PeriodDto } from '../dto/get-marcaje-dates';
+import { MarcajeType } from '../../enum/marcaje-type.enum';
+import { PeriodDto } from '../../dto/get-marcaje-dates';
 import { format } from 'path';
 
 interface ResponseDto {
@@ -26,8 +26,6 @@ interface ErrorResponse {
 
 @Injectable()
 export class MarcajeService {
-
-  
   constructor(
     @InjectRepository(Marcaje) private marcajeRepository: Repository<Marcaje>,
   ) {}
@@ -52,26 +50,16 @@ export class MarcajeService {
         },
       );
       const mark = new Marcaje();
-
-      if (latCoordinate) {
-        mark.latCoordinate = latCoordinate;
-      }
-
-      if (longCoordinate) {
-        mark.longCoordinate = longCoordinate;
-      }
-
-      console.log('Respuesta:', response.data);
+      mark.latCoordinate = latCoordinate;
+      mark.longCoordinate = longCoordinate;
       mark.id_user = (response.data as ResponseDto).id;
-
       const today = moment().format('DD-MM-YYYY');
       const tomorrow = moment().add(1, 'days').format('DD-MM-YYYY');
 
-      const period: PeriodDto  = 
-      {
+      const period: PeriodDto = {
         startDate: today,
-        endDate: tomorrow
-      }
+        endDate: tomorrow,
+      };
       const entryMark = await this.findFromToday(
         mark.id_user,
         MarcajeType.ENTRY,
@@ -93,26 +81,21 @@ export class MarcajeService {
         } else {
           console.log('marcaje salida no existe');
           mark.type = MarcajeType.EXIT;
-          const savedMarcaje = await this.marcajeRepository.save(mark);
-          const formattedMarcaje = await this.formatDate([savedMarcaje]);
-          return { success: true, data: formattedMarcaje[0] };
+          let formattedMark = await this.saveAndFormatMark(mark);
+          return { success: true, data: formattedMark };
         }
       } else {
-        const savedMark = await this.marcajeRepository.save(mark);
-        const formattedMarcaje = await this.formatDate([savedMark]);
-        return { success: true, data: formattedMarcaje[0] };
+        let formattedMark = await this.saveAndFormatMark(mark);
+        return { success: true, data: formattedMark };
       }
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        //Axios error ---> Fallo utilizando axios
-        //401 error de autenticación
         return { success: false, message: 'Autenticación inválida' };
       }
-
       return { success: false, message: 'Ocurrió un error inesperado' };
     }
   }
-  
+
   async formatDate(marks: Marcaje[]) {
     return marks.map((mark) => ({
       id: mark.id,
@@ -130,7 +113,7 @@ export class MarcajeService {
   async findAll() {
     const marks = await this.marcajeRepository.find({
       order: {
-        date: 'DESC',
+        date: 'ASC',
       },
     });
     return this.formatDate(marks);
@@ -150,11 +133,11 @@ export class MarcajeService {
   }
 
   findFromToday(id: number, type: MarcajeType, period: PeriodDto) {
-      const {startDate} = period;
-      const {endDate} = period;
-      
-      const start = moment(startDate, "DD-MM-YYYY").toDate();
-      const end = moment(endDate, "DD-MM-YYYY").toDate();
+    const { startDate } = period;
+    const { endDate } = period;
+
+    const start = moment(startDate, 'DD-MM-YYYY').toDate();
+    let end = moment(endDate, 'DD-MM-YYYY').toDate();
 
     return this.marcajeRepository.findOne({
       where: {
@@ -166,12 +149,20 @@ export class MarcajeService {
   }
 
   async findFromTodayType(idUser: number, period: PeriodDto) {
-    const exitRegister = await this.findFromToday(idUser, MarcajeType.EXIT, period);
+    const exitRegister = await this.findFromToday(
+      idUser,
+      MarcajeType.EXIT,
+      period,
+    );
     if (exitRegister) {
       console.log(exitRegister);
       return 2;
     }
-    const entryRegister = await this.findFromToday(idUser, MarcajeType.ENTRY, period);
+    const entryRegister = await this.findFromToday(
+      idUser,
+      MarcajeType.ENTRY,
+      period,
+    );
     if (entryRegister) {
       console.log(entryRegister);
       return 1;
@@ -182,7 +173,7 @@ export class MarcajeService {
   async update(id: number, date: string) {
     console.log('Original date:', date);
     if (!moment(date, 'DD-MM-YYYY HH:mm:ss', true).isValid()) {
-      console.log( `Fecha inválida: ${date}`);
+      console.log(`Fecha inválida: ${date}`);
       return null;
     }
 
@@ -200,9 +191,9 @@ export class MarcajeService {
   }
 
   convertDate(date: string) {
-    const newDate =  moment(date, 'DD-MM-YYYY HH:mm:ss')
-    .add(4, 'hour')
-    .format('YYYY-MM-DD HH:mm:ss.SSSSSS+00');
+    const newDate = moment(date, 'DD-MM-YYYY HH:mm:ss')
+      .add(4, 'hour')
+      .format('YYYY-MM-DD HH:mm:ss.SSSSSS+00');
     console.log('utc Date', newDate);
     return newDate;
   }
@@ -217,10 +208,11 @@ export class MarcajeService {
   }
 
   async getByPeriod(idUser: number, startDate: string, endDate: string) {
+    console.log(idUser);
     const fromDate = moment(startDate, 'DD-MM-YYYY').toDate();
     console.log('Fecha de entrada:', fromDate);
 
-    const untilDate = moment(endDate, 'DD-MM-YYYY').toDate();
+    const untilDate = moment(endDate, 'DD-MM-YYYY').add(1, 'day').toDate();
     console.log('Fecha de salida:', untilDate);
 
     const marks: Marcaje[] = await this.marcajeRepository.find({
@@ -229,6 +221,8 @@ export class MarcajeService {
         id_user: idUser,
       },
     });
+
+    console.log(marks);
     return this.formatDate(marks);
   }
 
@@ -264,41 +258,48 @@ export class MarcajeService {
   }
 
   async adminCreate(token: string, idUser: number, date: string) {
-
     console.log('Token recibido:', token);
     const endpoint: string = `${process.env.EXPO_PUBLIC_MS_USER_URL}/auth/admin/role`;
     console.log(endpoint);
 
     try {
-      const response = await axios.post<ResponseDto | ErrorResponse>(endpoint, {}, {
-        headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-        }
-      });
+      const response = await axios.post<ResponseDto | ErrorResponse>(
+        endpoint,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        },
+      );
     } catch (error) {
       console.log(error.response?.status);
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        //Axios error ---> Fallo utilizando axios
-        //401 error de autenticación
-        console.log("Autenticación inválida");
+        console.log('Autenticación inválida');
         return { success: false, message: 'Autenticación inválida' };
-      } 
-      else if (axios.isAxiosError(error) && error.response?.status === 403) {
-        //Axios error ---> Fallo utilizando axios
-        //401 error de autenticación
-        console.log("Permisos insuficientes");
-        return { success: false, message: 'Permisos insuficientes' }; 
-      } else {return {success: false, message: 'Error desconocido'}}
+      } else if (axios.isAxiosError(error) && error.response?.status === 403) {
+        console.log('Permisos insuficientes');
+        return { success: false, message: 'Permisos insuficientes' };
+      } else {
+        return { success: false, message: 'Error desconocido' };
+      }
     }
-        
+
     console.log('Original date:', date);
     if (!moment(date, 'DD-MM-YYYY HH:mm:ss', true).isValid()) {
       console.log('Fecha inválida');
-      return {success: false, message: `fecha ${date} posee un formato inválido, debe ser DD-MM-YYYY`};
-    } 
-    const startDate = moment(date.split(' '), 'DD-MM-YYYY').format('DD-MM-YYYY');
-    const endDate = moment(date.split(' '), 'DD-MM-YYYY').add(1, 'days').format('DD-MM-YYYY');
+      return {
+        success: false,
+        message: `fecha ${date} posee un formato inválido, debe ser DD-MM-YYYY`,
+      };
+    }
+    const startDate = moment(date.split(' '), 'DD-MM-YYYY').format(
+      'DD-MM-YYYY',
+    );
+    const endDate = moment(date.split(' '), 'DD-MM-YYYY')
+      .add(1, 'days')
+      .format('DD-MM-YYYY');
     console.log(startDate);
     console.log(endDate);
 
@@ -308,11 +309,10 @@ export class MarcajeService {
     mark.adminFlag = true;
     mark.id_user = idUser;
 
-    const period: PeriodDto  = 
-      {
-        startDate: startDate,
-        endDate: endDate
-      }
+    const period: PeriodDto = {
+      startDate: startDate,
+      endDate: endDate,
+    };
     const entryMark = await this.findFromToday(
       idUser,
       MarcajeType.ENTRY,
@@ -331,46 +331,39 @@ export class MarcajeService {
         return {
           success: false,
           message: 'Ya se registró marcaje de entrada y salida',
-        }
-        } else {
-          console.log('marcaje salida no existe');
-          /*
-          const entryDate = moment(this.convertDate(date)).toDate();
-          const exitDate = moment(entryMark.date).toDate();
-          if(entryDate < exitDate) {
-            return {
-              success: false,
-              message: `Fecha de entrada ${entryDate} < fecha salida ${exitDate}`
-            };
-          }
-          */
-          mark.type = MarcajeType.EXIT;
-          let savedMarcaje = await this.marcajeRepository.save(mark);
-          console.log('Marcaje guardado');
-          console.log(savedMarcaje);
-          savedMarcaje = await this.update(mark.id, date);
-          console.log('Marcaje optimizado');
-          console.log(savedMarcaje);
-          const formattedMarcaje = await this.formatDate([savedMarcaje]);
-          console.log("marcaje formateado");
-          console.log(formattedMarcaje);
-          return { success: true, data: formattedMarcaje[0] };
-        }
+        };
       } else {
+        console.log('marcaje salida no existe');
+        mark.type = MarcajeType.EXIT;
         let savedMarcaje = await this.marcajeRepository.save(mark);
-          console.log('Marcaje guardado');
-          console.log(savedMarcaje);
-          savedMarcaje = await this.update(mark.id, date);
-          console.log('Marcaje optimizado');
-          console.log(savedMarcaje);
-          const formattedMarcaje = await this.formatDate([savedMarcaje]);
-          console.log("marcaje formateado");
-          console.log(formattedMarcaje);
+        console.log('Marcaje guardado');
+        console.log(savedMarcaje);
+        savedMarcaje = await this.update(mark.id, date);
+        console.log('Marcaje optimizado');
+        console.log(savedMarcaje);
+        const formattedMarcaje = await this.formatDate([savedMarcaje]);
+        console.log('marcaje formateado');
+        console.log(formattedMarcaje);
         return { success: true, data: formattedMarcaje[0] };
       }
-      
+    } else {
+      let savedMarcaje = await this.marcajeRepository.save(mark);
+      console.log('Marcaje guardado');
+      console.log(savedMarcaje);
+      savedMarcaje = await this.update(mark.id, date);
+      console.log('Marcaje optimizado');
+      console.log(savedMarcaje);
+      const formattedMarcaje = await this.formatDate([savedMarcaje]);
+      console.log('marcaje formateado');
+      console.log(formattedMarcaje);
+      return { success: true, data: formattedMarcaje[0] };
+    }
   }
-  
 
-
+  private async saveAndFormatMark(mark: Marcaje) {
+    const savedMark = await this.marcajeRepository.save(mark);
+    const formattedMarcaje = await this.formatDate([savedMark]);
+    console.log(formattedMarcaje[0]);
+    return formattedMarcaje[0];
+  }
 }
