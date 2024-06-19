@@ -6,7 +6,7 @@ export class YearlyAverageHours {
   id: number;
 
   @Column()
-  user_id: number;
+  idUser: number;
 
   @Column()
   year: string;
