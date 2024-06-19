@@ -12,7 +12,7 @@ export class DailyHoursService {
     private readonly dailyUserHoursRepository: Repository<DailyHours>,
   ) {}
 
-  @Cron(CronExpression.EVERY_10_HOURS)
+  @Cron(CronExpression.EVERY_11_HOURS)
   async updateDailyUserHours(): Promise<void> {
     console.log(`Daily Cron en progreso`);
     await this.dailyUserHoursRepository.query(

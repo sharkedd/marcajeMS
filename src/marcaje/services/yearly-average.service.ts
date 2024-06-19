@@ -11,7 +11,7 @@ export class YearlyAverageHourService {
     private readonly yearlyUserHoursRepository: Repository<YearlyAverageHours>,
   ) {}
 
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_10_HOURS)
   async updateMonthlyUserHours(): Promise<void> {
     console.log(`Yearly Cron en progreso `);
     await this.yearlyUserHoursRepository.query(
