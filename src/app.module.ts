@@ -8,6 +8,7 @@ import { ConfigModule } from '@nestjs/config';
 import { MonthlyAverageHours } from './entities/monthly-average-hours';
 import { ScheduleModule } from '@nestjs/schedule';
 import { YearlyAverageHours } from './entities/yearly-average-hours.entity';
+import { DailyHours } from './entities/daily-hours';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { YearlyAverageHours } from './entities/yearly-average-hours.entity';
       username: 'postgres',
       password: 'jmcr0612',
       database: 'postgres',
-      entities: [Marcaje, MonthlyAverageHours, YearlyAverageHours],
+      entities: [Marcaje, DailyHours, MonthlyAverageHours, YearlyAverageHours],
       synchronize: true,
     }),
     ConfigModule.forRoot(),

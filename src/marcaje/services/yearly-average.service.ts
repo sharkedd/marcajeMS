@@ -11,7 +11,7 @@ export class YearlyAverageHourService {
     private readonly yearlyUserHoursRepository: Repository<YearlyAverageHours>,
   ) {}
 
-  @Cron(CronExpression.EVERY_10_HOURS)
+  @Cron(CronExpression.EVERY_10_SECONDS)
   async updateMonthlyUserHours(): Promise<void> {
     console.log(`Yearly Cron en progreso `);
     await this.yearlyUserHoursRepository.query(
@@ -46,7 +46,7 @@ export class YearlyAverageHourService {
         FROM timeMarks
         WHERE entryTime IS NOT NULL AND exitTime IS NOT NULL
     )
-    INSERT INTO "yearly-average-hours" (user_id, year, average_hours_worked)
+    INSERT INTO "yearly-average-hours" ("idUser", year, average_hours_worked)
 
     SELECT 
         "user",

@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('monthly-average-hours')
-export class MonthlyAverageHours {
+@Entity('daily-hours')
+export class DailyHours {
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -9,8 +9,8 @@ export class MonthlyAverageHours {
   idUser: number;
 
   @Column()
-  month: string;
+  day: string;
 
   @Column('float')
-  average_hours_worked: number;
+  dailyHoursWorked: number;
 }
