@@ -13,58 +13,65 @@ export class MonthlyAverageHoursService {
     private readonly monthlyUserHoursRepository: Repository<MonthlyAverageHours>,
   ) {}
 
-  @Cron(CronExpression.EVERY_10_SECONDS)
+  @Cron(CronExpression.EVERY_11_HOURS)
   async updateMonthlyUserHours(): Promise<void> {
-    console.log(`Monthly Cron en progreso `);
+    console.log(`MonthlyCron en progreso `);
     await this.monthlyUserHoursRepository.query(
       `DELETE FROM "monthly-average-hours"`,
     );
 
     await this.monthlyUserHoursRepository.query(`
-    with dailyMarks AS (
+    WITH dailyMarks AS (
       SELECT
-          id_user as idUser,
+          id_user AS idUser,
           "type",
           "date"::date AS "day",
           "date"
-       FROM marcajes
+      FROM marcajes
+      WHERE EXTRACT(DOW FROM "date") BETWEEN 1 AND 5
   ),
   timeMarks AS (
-      select
-        idUser,
+      SELECT
+          idUser,
           "day",
           MAX(CASE WHEN "type" = 'entry' THEN "date" END) AS entryTime,
           MAX(CASE WHEN "type" = 'exit' THEN "date" END) AS exitTime
       FROM dailyMarks
-      GROUP BY idUser, day
+      GROUP BY idUser, "day"
   ),
-  monthMarks as (
-    select 
-      idUser as "user",
-      "day",
-      entryTime,
-      exitTime,
-      extract (epoch from (exitTime - entryTime)/3600) as hoursWorked
-    from timeMarks
-    where (entryTime is not null) and (exitTime is not null)
+  monthMarks AS (
+      SELECT 
+          idUser AS "user",
+          "day",
+          entryTime,
+          exitTime,
+          EXTRACT(epoch FROM (exitTime - entryTime))/3600 AS hoursWorked
+      FROM timeMarks
+      WHERE entryTime IS NOT NULL AND exitTime IS NOT NULL
   )
   INSERT INTO "monthly-average-hours" ("idUser", month, average_hours_worked)
-  select 
-    "user",
-    TO_CHAR(DATE_TRUNC('month', "day"), 'YYYY-MM') as month,
-    avg(hoursworked) as average
-  from monthMarks
-  group by TO_CHAR(DATE_TRUNC('month', "day"), 'YYYY-MM'), "user"
+  SELECT 
+      "user",
+      TO_CHAR(DATE_TRUNC('month', "day"), 'YYYY-MM') AS "month",
+      AVG(hoursWorked) AS average
+  FROM monthMarks
+  GROUP BY TO_CHAR(DATE_TRUNC('month', "day"), 'YYYY-MM'), "user";
+  
   
     `);
   }
 
   async getMonthlyUserHours(): Promise<MonthlyAverageHours[]> {    
-    const monthlyHoursWork = await this.monthlyUserHoursRepository.find();
+    const monthlyHoursWork = await this.monthlyUserHoursRepository.find({
+      order: {
+        idUser: 'ASC',
+        month: 'ASC'
+      }
+    });
     return monthlyHoursWork.map(monthlyHoursWork => ({
       id: monthlyHoursWork.id,
       idUser: monthlyHoursWork.idUser,
-      month: moment(monthlyHoursWork.month).format('DD-MM-YYYY'),
+      month: moment(monthlyHoursWork.month).format('MM-YYYY'),
       average_hours_worked: monthlyHoursWork.average_hours_worked,
     }));
     
