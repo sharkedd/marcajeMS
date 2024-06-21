@@ -48,7 +48,12 @@ export class DailyHoursService {
   }
 
   async getDailyUserHours(): Promise<DailyHours[]>  {
-    const dailyHoursWork = await this.dailyUserHoursRepository.find();
+    const dailyHoursWork = await this.dailyUserHoursRepository.find({
+      order: {
+        idUser: 'ASC',
+        day: 'ASC'
+      }
+    });
     return dailyHoursWork.map(dailyHoursWork => ({
       id: dailyHoursWork.id,
       idUser: dailyHoursWork.idUser,

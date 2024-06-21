@@ -62,7 +62,12 @@ export class MonthlyAverageHoursService {
   }
 
   async getMonthlyUserHours(): Promise<MonthlyAverageHours[]> {    
-    const monthlyHoursWork = await this.monthlyUserHoursRepository.find();
+    const monthlyHoursWork = await this.monthlyUserHoursRepository.find({
+      order: {
+        idUser: 'ASC',
+        month: 'ASC'
+      }
+    });
     return monthlyHoursWork.map(monthlyHoursWork => ({
       id: monthlyHoursWork.id,
       idUser: monthlyHoursWork.idUser,

@@ -58,6 +58,11 @@ export class YearlyAverageHourService {
   }
 
   async getYearlyUserHours(): Promise<YearlyAverageHours[]> {
-    return await this.yearlyUserHoursRepository.find();
+    return await this.yearlyUserHoursRepository.find({
+      order: {
+        idUser: 'ASC',
+        year: 'ASC'
+      }
+    });
   }
 }
