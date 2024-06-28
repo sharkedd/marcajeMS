@@ -1,15 +1,11 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { CreateMarcajeDto } from '../../dto/create-marcaje.dto';
-import { UpdateMarcajeDto } from '../../dto/update-marcaje.dto';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Marcaje } from '../../entities/marcaje.entity';
-import { Between, Repository } from 'typeorm';
+import * as typeOrm from 'typeorm';
 import * as moment from 'moment-timezone';
-import axios, { all } from 'axios';
-import { Interface } from 'readline';
+import axios from 'axios';
 import { MarcajeType } from '../../enum/marcaje-type.enum';
 import { PeriodDto } from '../../dto/get-marcaje-dates';
-import { format } from 'path';
 
 interface ResponseDto {
   id: number;
@@ -27,7 +23,8 @@ interface ErrorResponse {
 @Injectable()
 export class MarcajeService {
   constructor(
-    @InjectRepository(Marcaje) private marcajeRepository: Repository<Marcaje>,
+    @InjectRepository(Marcaje)
+    private marcajeRepository: typeOrm.Repository<Marcaje>,
   ) {}
 
   async createMarcaje(
@@ -141,7 +138,7 @@ export class MarcajeService {
 
     return this.marcajeRepository.findOne({
       where: {
-        date: Between(start, end),
+        date: typeOrm.Between(start, end),
         type: type,
         id_user: id,
       },
@@ -177,8 +174,39 @@ export class MarcajeService {
       return null;
     }
 
+    let mark = new Marcaje();
+    mark = await this.marcajeRepository.findOne({
+      where: {
+        id: id,
+      }
+    })
+    console.log('Fecha marcaje a editar');
+    console.log(mark.date);
+
     const convertedDate = this.convertDate(date);
     console.log('utc Date', convertedDate);
+
+    const period: PeriodDto = 
+    {
+      startDate: moment(date, 'DD-MM-YYYY hh:mm:ss').format('DD-MM-YYYY'),
+      endDate: moment(date, 'DD-MM-YYYY hh:mm:ss').add(1, 'days').format('DD-MM-YYYY'),
+    }
+
+    const entryMark = await this.findFromToday(
+      mark.id_user,
+      MarcajeType.ENTRY,
+      period,
+    );
+
+    if(entryMark) {
+      console.log('Marcaje de Entrada');
+      console.log(entryMark.date);
+      if(entryMark.date >= moment(date, 'DD-MM-YYYY hh:mm:ss').toDate()) {
+        console.log('Entrada mayor a salida')
+        return null;
+      }
+    }
+
     await this.marcajeRepository.update(id, {
       date: convertedDate,
       adminFlag: true,
@@ -217,7 +245,7 @@ export class MarcajeService {
 
     const marks: Marcaje[] = await this.marcajeRepository.find({
       where: {
-        date: Between(fromDate, untilDate),
+        date: typeOrm.Between(fromDate, untilDate),
         id_user: idUser,
       },
     });
@@ -246,7 +274,7 @@ export class MarcajeService {
 
     const marks: Marcaje[] = await this.marcajeRepository.find({
       where: {
-        date: Between(startOfWeek, endOfWeek),
+        date: typeOrm.Between(startOfWeek, endOfWeek),
         id_user: idUser,
       },
       order: {
@@ -367,19 +395,18 @@ export class MarcajeService {
     return formattedMarcaje[0];
   }
 
-   async obtainOne(id: number) {
+  async obtainOne(id: number) {
     const mark = await this.marcajeRepository.findOne({
       where: {
         id: id,
-      }
-    })
-    if(mark) {
+      },
+    });
+    if (mark) {
       const formattedMarcaje = await this.formatDate([mark]);
       console.log(formattedMarcaje[0]);
       return formattedMarcaje[0];
     } else {
       return null;
     }
-    
   }
 }

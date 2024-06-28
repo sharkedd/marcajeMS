@@ -24,7 +24,7 @@ import { DailyHours } from './entities/daily-hours';
     }),
     ConfigModule.forRoot(),
     MarcajeModule,
-    ScheduleModule.forRoot()
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],
