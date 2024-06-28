@@ -6,6 +6,7 @@ import * as moment from 'moment-timezone';
 import axios from 'axios';
 import { MarcajeType } from '../../enum/marcaje-type.enum';
 import { PeriodDto } from '../../dto/get-marcaje-dates';
+import { exit } from 'process';
 
 interface ResponseDto {
   id: number;
@@ -169,10 +170,6 @@ export class MarcajeService {
 
   async update(id: number, date: string) {
     console.log('Original date:', date);
-    if (!moment(date, 'DD-MM-YYYY HH:mm:ss', true).isValid()) {
-      console.log(`Fecha inválida: ${date}`);
-      return null;
-    }
 
     let mark = new Marcaje();
     mark = await this.marcajeRepository.findOne({
@@ -192,19 +189,36 @@ export class MarcajeService {
       endDate: moment(date, 'DD-MM-YYYY hh:mm:ss').add(1, 'days').format('DD-MM-YYYY'),
     }
 
-    const entryMark = await this.findFromToday(
-      mark.id_user,
-      MarcajeType.ENTRY,
-      period,
-    );
+    switch(mark.type) {
+      case MarcajeType.ENTRY:
+        const exitMarc = await this.findFromToday(
+          mark.id_user,
+          MarcajeType.EXIT,
+          period,
+        );
 
-    if(entryMark) {
-      console.log('Marcaje de Entrada');
-      console.log(entryMark.date);
-      if(entryMark.date >= moment(date, 'DD-MM-YYYY hh:mm:ss').toDate()) {
-        console.log('Entrada mayor a salida')
-        return null;
-      }
+        if(exitMarc) {
+          if(exitMarc.date <= moment(date, 'DD-MM-YYYY hh:mm:ss').toDate()) {
+            console.log('Salida menor a entrada')
+            return {success: false, message:'Exit time cannot be before entry time. Please try again'}
+          }
+        }
+        break;
+
+      case MarcajeType.EXIT:
+        const entryMark = await this.findFromToday(
+          mark.id_user,
+          MarcajeType.ENTRY,
+          period,
+        );
+
+        if(entryMark) {
+          if(entryMark.date >= moment(date, 'DD-MM-YYYY hh:mm:ss').toDate()) {
+            console.log('Entrada mayor a salida');
+            return {success: false, message:'Entry time cannot be after exit time. Please try again'}
+          }
+        }
+        break;
     }
 
     await this.marcajeRepository.update(id, {
@@ -331,7 +345,7 @@ export class MarcajeService {
     console.log(startDate);
     console.log(endDate);
 
-    const mark = new Marcaje();
+    let mark = new Marcaje();
     mark.latCoordinate = '0';
     mark.longCoordinate = '0';
     mark.adminFlag = true;
@@ -363,28 +377,34 @@ export class MarcajeService {
       } else {
         console.log('marcaje salida no existe');
         mark.type = MarcajeType.EXIT;
+        if(entryMark.date >= moment(date, 'DD-MM-YYYY hh:mm:ss').toDate()){
+          return {success: false, message: 'Exit Time must be after Entry Time'}
+        }
         let savedMarcaje = await this.marcajeRepository.save(mark);
         console.log('Marcaje guardado');
         console.log(savedMarcaje);
-        savedMarcaje = await this.update(mark.id, date);
-        console.log('Marcaje optimizado');
-        console.log(savedMarcaje);
-        const formattedMarcaje = await this.formatDate([savedMarcaje]);
-        console.log('marcaje formateado');
-        console.log(formattedMarcaje);
-        return { success: true, data: formattedMarcaje[0] };
+
+        const convertedDate = this.convertDate(date);
+        console.log('utc Date', convertedDate);
+        await this.marcajeRepository.update(mark.id, {
+              date: convertedDate,
+              adminFlag: true,
+            });
+        let updatedMark = this.obtainOne(mark.id);
+        return {success: true, data: updatedMark};
       }
     } else {
       let savedMarcaje = await this.marcajeRepository.save(mark);
       console.log('Marcaje guardado');
       console.log(savedMarcaje);
-      savedMarcaje = await this.update(mark.id, date);
-      console.log('Marcaje optimizado');
-      console.log(savedMarcaje);
-      const formattedMarcaje = await this.formatDate([savedMarcaje]);
-      console.log('marcaje formateado');
-      console.log(formattedMarcaje);
-      return { success: true, data: formattedMarcaje[0] };
+      const convertedDate = this.convertDate(date);
+        console.log('utc Date', convertedDate);
+        await this.marcajeRepository.update(mark.id, {
+              date: convertedDate,
+              adminFlag: true,
+            });
+        let updatedMark = this.obtainOne(mark.id);
+        return {success: true, data: updatedMark};
     }
   }
 
@@ -410,3 +430,4 @@ export class MarcajeService {
     }
   }
 }
+

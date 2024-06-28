@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MonthlyAverageHours } from 'src/entities/monthly-average-hours';
 import * as shedule from '@nestjs/schedule';
-import moment from 'moment';
+import * as moment from 'moment';
 
 @Injectable()
 export class MonthlyAverageHoursService {
