@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Cron, CronExpression } from '@nestjs/schedule';
+import * as shedule from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as moment from 'moment-timezone';
 import { DailyHours } from 'src/entities/daily-hours';
@@ -12,12 +12,10 @@ export class DailyHoursService {
     private readonly dailyUserHoursRepository: Repository<DailyHours>,
   ) {}
 
-  @Cron(CronExpression.EVERY_11_HOURS)
+  @shedule.Cron(shedule.CronExpression.EVERY_11_HOURS)
   async updateDailyUserHours(): Promise<void> {
     console.log(`Daily Cron en progreso`);
-    await this.dailyUserHoursRepository.query(
-      `DELETE FROM "daily-hours"`,
-    );
+    await this.dailyUserHoursRepository.query(`DELETE FROM "daily-hours"`);
 
     await this.dailyUserHoursRepository.query(`
     WITH dailyMarks AS (
@@ -47,18 +45,18 @@ export class DailyHoursService {
     `);
   }
 
-  async getDailyUserHours(): Promise<DailyHours[]>  {
+  async getDailyUserHours(): Promise<DailyHours[]> {
     const dailyHoursWork = await this.dailyUserHoursRepository.find({
       order: {
         idUser: 'ASC',
-        day: 'ASC'
-      }
+        day: 'ASC',
+      },
     });
-    return dailyHoursWork.map(dailyHoursWork => ({
+    return dailyHoursWork.map((dailyHoursWork) => ({
       id: dailyHoursWork.id,
       idUser: dailyHoursWork.idUser,
       day: moment(dailyHoursWork.day).format('DD-MM-YYYY'),
-      dailyHoursWorked: dailyHoursWork.dailyHoursWorked
+      dailyHoursWorked: dailyHoursWork.dailyHoursWorked,
     }));
   }
 }
