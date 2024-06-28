@@ -1,5 +1,3 @@
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateMarcajeDto } from './create-marcaje.dto';
 import * as validator from 'class-validator';
 
 export class UpdateMarcajeDto {
