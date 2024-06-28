@@ -366,4 +366,20 @@ export class MarcajeService {
     console.log(formattedMarcaje[0]);
     return formattedMarcaje[0];
   }
+
+   async obtainOne(id: number) {
+    const mark = await this.marcajeRepository.findOne({
+      where: {
+        id: id,
+      }
+    })
+    if(mark) {
+      const formattedMarcaje = await this.formatDate([mark]);
+      console.log(formattedMarcaje[0]);
+      return formattedMarcaje[0];
+    } else {
+      return null;
+    }
+    
+  }
 }
