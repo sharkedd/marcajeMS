@@ -87,4 +87,9 @@ export class MarcajeController {
   remove(@Param('id') id: string) {
     return this.marcajeService.remove(+id);
   }
+
+  @Get('/obtain/:id')
+  obtainOne(@Param('id') id: string) {
+    return this.marcajeService.obtainOne(+id);
+  }
 }
