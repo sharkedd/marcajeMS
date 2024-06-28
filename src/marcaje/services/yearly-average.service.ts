@@ -11,7 +11,7 @@ export class YearlyAverageHourService {
     private readonly yearlyUserHoursRepository: Repository<YearlyAverageHours>,
   ) {}
 
-  @shedule.Cron(shedule.CronExpression.EVERY_10_HOURS)
+  @shedule.Cron(shedule.CronExpression.EVERY_10_SECONDS)
   async updateMonthlyUserHours(): Promise<void> {
     console.log(`Yearly Cron en progreso `);
     await this.yearlyUserHoursRepository.query(
